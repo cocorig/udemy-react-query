@@ -177,3 +177,122 @@ if (isError) {
 
 - **staleTime**: 데이터가 신선하게 유지되는 기간. 이 기간이 지나면 데이터는 stale 상태가 되어 다시 가져와야 한다.
 - **gcTime**: 데이터가 캐시에 유지되는 기간. 이 기간이 지나면 캐시에서 데이터가 제거된다.
+
+## 종속된 배열의 쿼리 키 사용
+
+queryKey에 배열을 사용하면, 쿼리의 두 번째 요소를 추가하여 데이터가 업데이트되었을 때 새로운 쿼리를 생성할 수 있다. post.id가 업데이트될 때마다 각 쿼리는 개별적인 staleTime과 캐시 Time을 갖게 된다. 이 종속성 배열이 다르면, 리액트 쿼리는 이를 완전히 다른 것으로 간주하기 때문에 데이터를 가져올 때 사용하는 쿼리 함수의 모든 값은 키의 일부여야 한다.
+
+```jsx
+const { data, isLoading, error, isError } = useQuery({
+  queryKey: ["comments", post.id],
+  queryFn: () => fetchComments(post.id),
+});
+```
+
+위의 코드처럼 post.id를 queryKey에 추가하면 ["comments", 3]와 같은 쿼리 키로 각 포스트에 대해 별도의 쿼리가 생기고, 캐시는 각각의 별도의 공간을 갖게 된다.
+
+이렇게 하면 데이터가 달라도, 리액트 쿼리는 캐시에 데이터가 있다고 보고 새로 업데이트하지 않는 상황을 방지할 수 있다. post.id가 업데이트될 때마다 해당 포스트에 대한 새로운 데이터를 가져오게 된다.
+
+<img width="530" alt="" src="https://github.com/cocorig/udemy-react-query/assets/95855640/9e88cec2-c126-4ecf-8f36-bf460251d24c">
+
+comments 1, 2가 화면에 표시되지 않고 비활성 상태가 되면, 이 쿼리에 대한 gcTime이 진행 중이다. 쿼리가 비활성 상태가 되고 화면에 더 이상 표시되지 않으면, 설정된 gcTime에 따라 캐시에서 데이터가 제거된다.
+
+---
+
+# 섹션 2: Pagination 및 Prefetching과 Mutations
+
+## Pagination
+
+-현재 페이지의 컴포넌트 상태를 사용해 현재 페이지를 추적한다.
+쿼리 키를 배열로 업데이트해서 우리가 가져오려는 해당 페이지 번호를 포함시킨다.
+
+```jsx
+const [currentPage, setCurrentPage] = useState(1);
+```
+
+- queryKey 업데이트
+
+  가져오려는 해당 페이지 번호를 포함시킨다.
+
+```jsx
+const { data, isError, error, isLoading } = useQuery({
+  queryKey: ["posts", currentPage],
+  queryFn: () => fetchPosts(currentPage),
+});
+```
+
+- 버튼 클릭 이벤트 처리
+
+다음 , 이전 버튼 클릭 시, currentPage 상태를 업데이트한다. 그럼 리액트 쿼리는 쿼리 키의 변화를 감지하고 새로운 쿼리를 실행하여 새로운 페이지 번호의 데이터를 가져온다.
+
+```jsx
+  <button
+          disabled={currentPage <= 1}
+          onClick={() => {
+            setCurrentPage((prev) => prev - 1);
+          }}
+        >
+          Previous page
+        </button>
+        <span>Page {currentPage}</span>
+        <button
+          disabled={currentPage >= maxPostPage}
+          onClick={() => {
+            setCurrentPage((prev) => prev + 1);
+          }}
+        >
+          Next page
+        </button>
+```
+
+페이지 버튼을 클릭할 때마다 currentPage 상태가 업데이트되고, 리액트 쿼리는 새로운 페이지 번호에 대한 데이터를 가져온다.
+
+## Prefetching
+
+데이터를 미리 가져와 캐시에 추가하면 사용자가 다음 정보를 기다리지 않도록 할 수 있다
+
+- 기본적으로 stale 상태로 간주(설정 가능)
+- 데이터를 다시 가져오는 동안, 리액트 쿼리는 캐시에 있는 데이터를 제공한다.
+  - 캐시가 만료되지 않았을 때 적용
+- Prefetching은 페이지네이션뿐만 아니라 사용자가 다음에 필요할 모든 데이터를 미리 가져올 수 있다.
+  - 예를 들어, 사용자가 웹사이트에서 특정 탭을 방문할 가능성이 높다면 그 데이터를 미리 가져올 수 있다.
+- prefetchQuery는 queryClient의 메서드이다.
+
+  - useQueryClient 훅을 사용하여 queryClient를 가져올 수 있다.
+
+  ```jsx
+  import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    // 마지막 페이지 전까지 미리 가져오기 실행
+    if (currentPage < maxPostPage) {
+      const nextPage = currentPage + 1;
+      queryClient.prefetchQuery({
+        queryKey: ["posts", nextPage],
+        queryFn: () => fetchPosts(nextPage),
+      });
+    }
+  }, [currentPage, queryClient]);
+  ```
+
+그럼 prefetchQuery은 어디서 실행하는게 좋을까? 상태 업데이트는 비동기적으로 이 업데이트가 이미 적용되었는지 정확히 알 수 없기 때문에 다음 페이지 버튼의 클릭 이벤트에서 prefetching을 실행하는 것 보다 현재 페이지가 변결될 때마다 useEffect를 써서 사용한다.
+
+currentPage가 바뀔 때마다 queryClient의 prefetchQuery 메서드를 사용하여 쿼리 키의 종속성 배열에 다음 페이지를 추가하고, 쿼리 함수에 fetchPosts의 인자로 전달한다. 이를 통해 currentPage에 따라 nextPage의 데이터를 미리 캐시에 추가할 수 있다.
+
+## Mutations
+
+Mutation은 서버에 네트워크 호출을 통해 실제 데이터를 업데이트하는 작업을 의미한다.
+예를 들어, 블로그에 포스트를 추가, 삭제하거나 포스트 제목을 변경하는 경우가 해당된다.
+
+### useMutation
+
+useQuery와 유사하지만 몇 가지 차이점이 있다.
+
+- useMutation은 mutate 함수를 반환한다. 이 함수는 실제로 서버에 변경 사항을 호출할 때 사용된다.
+- 데이터를 저장하지 않아서 쿼리 키가 필요 없다. 이는 변이(mutation)이지 쿼리(query)가 아니기 때문이다.
+- isLoading 상태는 있지만, 캐시된 것이 없기 때문에 isFetching 상태는 없다.
+- 기본적으로 retry가 없다.
+
+[Mutations 공식 문서](https://tanstack.com/query/latest/docs/framework/react/guides/mutations)
