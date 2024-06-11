@@ -1,16 +1,16 @@
 import dayjs from "dayjs";
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppointmentDateMap } from "../types";
 import { getAvailableAppointments } from "../utils";
-import { getMonthYearDetails, getNewMonthYear } from "./monthYear";
+import { MonthYear, getMonthYearDetails, getNewMonthYear } from "./monthYear";
 
 import { useLoginData } from "@/auth/AuthContext";
 import { axiosInstance } from "@/axiosInstance";
 import { queryKeys } from "@/react-query/constants";
 
 // for useQuery call
-async function getAppointments(
+export async function getAppointments(
   year: string,
   month: string
 ): Promise<AppointmentDateMap> {
@@ -61,9 +61,31 @@ export function useAppointments() {
   //
   //    2. The getAppointments query function needs monthYear.year and
   //       monthYear.month
-  const appointments: AppointmentDateMap = {};
-
+  const fallback: AppointmentDateMap = {};
+  const { data: appointments = fallback } = useQuery({
+    queryKey: [queryKeys.appointments, monthYear.year, monthYear.month],
+    queryFn: () => getAppointments(monthYear.year, monthYear.month),
+  });
   /** ****************** END 3: useQuery  ******************************* */
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const nextMonthYear = getNewMonthYear(monthYear, 1);
+    queryClient.prefetchQuery({
+      queryKey: [
+        queryKeys.appointments,
+        nextMonthYear.year,
+        nextMonthYear.month,
+      ],
+      queryFn: () => getAppointments(nextMonthYear.year, nextMonthYear.month),
+    });
+  }, [monthYear, queryClient]);
 
-  return { appointments, monthYear, updateMonthYear, showAll, setShowAll };
+  return {
+    appointments,
+    monthYear,
+    updateMonthYear,
+    showAll,
+    setShowAll,
+    getAppointments,
+  };
 }
