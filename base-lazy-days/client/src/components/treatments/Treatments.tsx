@@ -7,7 +7,7 @@ export function Treatments() {
   // replace with data from React Query
 
   const treatments = useTreatments();
-  console.log(treatments);
+
   return (
     <Box>
       <Heading mt={10} textAlign="center">

@@ -8,6 +8,7 @@ import {
   Td,
   Text,
   Tr,
+  useAccordion,
 } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { ImCancelCircle } from "react-icons/im";
@@ -61,7 +62,7 @@ export function UserAppointments() {
   const { userId } = useLoginData();
 
   const userAppointments = useUserAppointments();
-
+  console.log("userAppointments", userAppointments);
   if (!userId) {
     // don't render if there's no user
     return null;

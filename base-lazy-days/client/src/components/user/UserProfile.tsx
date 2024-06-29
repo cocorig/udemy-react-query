@@ -21,6 +21,7 @@ import { useLoginData } from "@/auth/AuthContext";
 export function UserProfile() {
   const { userId } = useLoginData();
   const { user } = useUser();
+  console.log(user);
   const patchUser = usePatchUser();
   const navigate = useNavigate();
 

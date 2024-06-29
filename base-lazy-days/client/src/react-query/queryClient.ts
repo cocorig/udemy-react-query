@@ -17,8 +17,15 @@ function errorHandler(errorMsg: string) {
     toast({ id, title, status: "error", variant: "subtle", isClosable: true });
   }
 }
-
+// global default value
 export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 600000, // 10분
+      gcTime: 900000, // 15분마다 캐시에서 만료된 데이터를 정리
+      refetchOnWindowFocus: false, // 창 포커스 시 리패치하지 않음
+    },
+  },
   queryCache: new QueryCache({
     onError: (error) => {
       errorHandler(error.message);

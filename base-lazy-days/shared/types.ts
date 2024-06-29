@@ -42,5 +42,5 @@ export interface Treatment extends Id {
 export interface Staff extends Id {
   name: string;
   treatmentNames: string[]; // in a more robust app, these might be treatment IDs
-  image: Image;
+  image?: Image;
 }
