@@ -52,6 +52,7 @@ export function useAuthActions(): UseAuth {
         });
 
         // update stored user data
+
         updateUser(data.user);
         setLoginData({ userId: data.user.id, userToken: data.user.token });
       }

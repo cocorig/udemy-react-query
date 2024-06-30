@@ -16,7 +16,7 @@ async function getUserAppointments(
   });
   return data.appointments;
 }
-
+// 사용자의 예약 정보를 가져오는 훅
 export function useUserAppointments(): Appointment[] {
   const { userId, userToken } = useLoginData();
   const fallback: Appointment[] = [];

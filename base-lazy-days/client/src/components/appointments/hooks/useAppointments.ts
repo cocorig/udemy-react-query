@@ -23,7 +23,6 @@ export async function getAppointments(
 }
 
 export function useAppointments() {
-  console.log("useAppointments 훅 실행");
   const currentMonthYear = getMonthYearDetails(dayjs());
   const [monthYear, setMonthYear] = useState(currentMonthYear);
 
@@ -36,7 +35,6 @@ export function useAppointments() {
   // select함수
   const selectFn = useCallback(
     (data: AppointmentDateMap, showAll: boolean) => {
-      console.log("select 함수 실행");
       if (showAll) return data;
       // 로그인한 사용자에게 예약된 appointments가 있을 경우
       return getAvailableAppointments(data, userId);

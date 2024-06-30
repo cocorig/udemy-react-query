@@ -27,7 +27,6 @@ interface AppointmentsTableProps {
 
 function AppointmentsTable({ userAppointments }: AppointmentsTableProps) {
   const cancelAppointment = useCancelAppointment();
-
   return (
     <Table variant="simple" m={10} maxWidth="500px">
       <Tbody>
@@ -62,7 +61,6 @@ export function UserAppointments() {
   const { userId } = useLoginData();
 
   const userAppointments = useUserAppointments();
-  console.log("userAppointments", userAppointments);
   if (!userId) {
     // don't render if there's no user
     return null;

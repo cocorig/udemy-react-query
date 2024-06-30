@@ -12,11 +12,13 @@ import { Field, Form, Formik } from "formik";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { usePatchUser } from "./hooks/usePatchUser";
+import { MUTATION_KEY, usePatchUser } from "./hooks/usePatchUser";
 import { useUser } from "./hooks/useUser";
 import { UserAppointments } from "./UserAppointments";
 
 import { useLoginData } from "@/auth/AuthContext";
+import { useMutationState } from "@tanstack/react-query";
+import { User } from "@shared/types";
 
 export function UserProfile() {
   const { userId } = useLoginData();
@@ -39,13 +41,29 @@ export function UserProfile() {
     address: string;
     phone: string;
   }
+  // useMutationState: 다른 컴포넌트에 모든 mutations에 접근할 수 있음,mutationKey와 결합
+  // https://tanstack.com/query/latest/docs/framework/react/guides/optimistic-updates#if-the-mutation-and-the-query-dont-live-in-the-same-component
+  const pendingData = useMutationState({
+    filters: {
+      mutationKey: [MUTATION_KEY],
+      status: "pending",
+    },
+    select: (mutation) => {
+      console.log(mutation);
+      return mutation.state.variables as User;
+    },
+  });
 
+  const pendingUser = pendingData ? pendingData[0] : null;
   return (
     <Flex minH="84vh" textAlign="center" justify="center">
       <Stack spacing={8} mx="auto" w="xl" py={12} px={6}>
         <UserAppointments />
         <Stack textAlign="center">
-          <Heading>Your information</Heading>
+          {/* 업데이트! */}
+          <Heading>
+            Info for {pendingUser ? pendingUser.name : user?.name}
+          </Heading>
         </Stack>
         <Box rounded="lg" bg="white" boxShadow="lg" p={8}>
           <Formik

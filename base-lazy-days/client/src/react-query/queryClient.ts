@@ -1,24 +1,27 @@
-import { QueryClient, QueryCache } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryCache,
+  MutationCache,
+  QueryClientConfig,
+} from "@tanstack/react-query";
 import { toast } from "@/components/app/toast";
 
-function errorHandler(errorMsg: string) {
-  // https://chakra-ui.com/docs/components/toast#preventing-duplicate-toast
-  // one message per page load, not one message per query
-  // the user doesn't care that there were three failed queries on the staff page
-  //    (staff, treatments, user)
+function createTitle(errorMsg: string, actionType: "query" | "mutation") {
+  const action = actionType === "query" ? "fetch" : "update";
+  return `could not ${action} data :${
+    errorMsg ?? "error connecting to server"
+  }`;
+}
+function errorHandler(title: string) {
   // 중복되는 id가 없게
   const id = "react-query-toast";
 
   if (!toast.isActive(id)) {
-    const action = "fetch";
-    const title = `could not ${action} data: ${
-      errorMsg ?? "error connecting to server"
-    }`;
     toast({ id, title, status: "error", variant: "subtle", isClosable: true });
   }
 }
-// global default value
-export const queryClient = new QueryClient({
+
+export const queryClientOptions: QueryClientConfig = {
   defaultOptions: {
     queries: {
       staleTime: 600000, // 10분
@@ -28,7 +31,17 @@ export const queryClient = new QueryClient({
   },
   queryCache: new QueryCache({
     onError: (error) => {
-      errorHandler(error.message);
+      const title = createTitle(error.message, "query");
+      errorHandler(title);
     },
   }),
-});
+
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      const title = createTitle(error.message, "mutation");
+      errorHandler(title);
+    },
+  }),
+};
+// global default value
+export const queryClient = new QueryClient(queryClientOptions);

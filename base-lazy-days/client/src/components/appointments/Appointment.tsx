@@ -28,6 +28,7 @@ export function Appointment({ appointmentData }: AppointmentProps) {
   const { userId } = useLoginData();
 
   const reserveAppointment = useReserveAppointment();
+
   const [textColor, bgColor] = getAppointmentColor(appointmentData, userId);
 
   const clickable = isClickable(userId, appointmentData);
